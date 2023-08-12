@@ -6,24 +6,22 @@ import argparse
 
 def read_content(file):
     try:
-        f=open(file, "r")
-        content= f.read()
-        f.close()
+        with open(file, "r") as f:
+            content= f.read()
     except:
         raise
     return content
 
 def header(function, version):
-    hdr= "%% %s(3) Version %s | MariaDB Connector/C\n" % (function, version)
-    return hdr
+    return "%% %s(3) Version %s | MariaDB Connector/C\n" % (function, version)
 
 def replace_links(content):
-  links= list(re.compile(r'\[([^\]]+)\]\(([^)]+)\)').findall(content))
-  for l in links:
-    search= "[%s()](%s)" % (l[1], l[1])
-    replace= "**%s(3)**" % l[1]
-    content= content.replace(search, replace)
-  return content
+    links= list(re.compile(r'\[([^\]]+)\]\(([^)]+)\)').findall(content))
+    for l in links:
+        search = f"[{l[1]}()]({l[1]})"
+        replace = f"**{l[1]}(3)**"
+        content= content.replace(search, replace)
+    return content
 
 parser= argparse.ArgumentParser(prog="create_man.py",
                                 description="Create man pages for MariaDB Connector/C")
@@ -39,16 +37,17 @@ funcs= func_list.split(";")
 for function in funcs:
 
     try:
-        print("%s/%s.md" % (args.docs, function))
-        content= read_content("%s/%s.md" % (args.docs, function))
-        
+        print(f"{args.docs}/{function}.md")
+        content = read_content(f"{args.docs}/{function}.md")
+
     except:
-        print("warning: No documentation for function %s found" % function)
+        print(f"warning: No documentation for function {function} found")
         continue
 
-    f= open("%s.3.md" % function, "w")
-    f.write(header(function, args.version))
-    f.write(replace_links(content))
-    f.close()
-    ret= os.system("pandoc --standalone --to man %s.3.md -o man/%s.3" % (function, function))
-    os.unlink("%s.3.md" % function)
+    with open(f"{function}.3.md", "w") as f:
+        f.write(header(function, args.version))
+        f.write(replace_links(content))
+    ret = os.system(
+        f"pandoc --standalone --to man {function}.3.md -o man/{function}.3"
+    )
+    os.unlink(f"{function}.3.md")
